@@ -2,6 +2,7 @@ package fcm
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -154,7 +155,7 @@ func (this *FcmClient) apiKeyHeader() string {
 }
 
 // sendOnce send a single request to fcm
-func (this *FcmClient) sendOnce() (*FcmResponseStatus, error) {
+func (this *FcmClient) sendOnce(ctx context.Context) (*FcmResponseStatus, error) {
 
 	fcmRespStatus := new(FcmResponseStatus)
 
@@ -163,7 +164,10 @@ func (this *FcmClient) sendOnce() (*FcmResponseStatus, error) {
 		return fcmRespStatus, err
 	}
 
-	request, err := http.NewRequest("POST", fcmServerUrl, bytes.NewBuffer(jsonByte))
+	request, err := http.NewRequestWithContext(ctx, "POST", fcmServerUrl, bytes.NewBuffer(jsonByte))
+	if err != nil {
+		return nil, err
+	}
 	request.Header.Set("Authorization", this.apiKeyHeader())
 	request.Header.Set("Content-Type", "application/json")
 
@@ -199,8 +203,11 @@ func (this *FcmClient) sendOnce() (*FcmResponseStatus, error) {
 
 // Send to fcm
 func (this *FcmClient) Send() (*FcmResponseStatus, error) {
-	return this.sendOnce()
+	return this.sendOnce(context.Background())
+}
 
+func (this *FcmClient) SendWithContext(ctx context.Context) (*FcmResponseStatus, error) {
+	return this.sendOnce(ctx)
 }
 
 // toJsonByte converts FcmMsg to a json byte
